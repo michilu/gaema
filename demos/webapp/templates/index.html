@@ -1,0 +1,7 @@
+Hello!
+
+{% if user %}
+    <p>Logged in as {{ user.first_name }} {{ user.last_name }}.</p>
+{% else %}
+    <p><a href="/login?redirect={{ current_url }}">Log in</a>.</p>
+{% endif %}

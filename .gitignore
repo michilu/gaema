@@ -1,0 +1,8 @@
+syntax: glob
+*.pyc
+*.sw?
+.DS_Store
+.hg
+.hgignore
+
+syntax: regexp

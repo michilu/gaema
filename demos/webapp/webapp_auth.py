@@ -86,7 +86,7 @@ class WebappAuth(object):
         self._request = handler.request
         self._response = handler.response
 
-    def require_setting(name, feature='this feature'):
+    def require_setting(self, name, feature='this feature'):
         """Raises an exception if the given setting is not defined.
 
         :param name:

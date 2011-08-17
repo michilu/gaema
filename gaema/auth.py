@@ -41,10 +41,10 @@ import urllib
 import urlparse
 import uuid
 
-from tornado import httpclient
-from tornado import escape
-from tornado.httputil import url_concat
-from tornado.util import bytes_type, b
+from gaema import httpclient
+from gaema import escape
+from gaema.httputil import url_concat
+from gaema.util import bytes_type, b
 
 class OpenIdMixin(object):
     """Abstract implementation of OpenID and Attribute Exchange.

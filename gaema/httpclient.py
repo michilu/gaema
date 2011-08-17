@@ -31,10 +31,10 @@ import httplib
 import time
 import weakref
 
-from tornado.escape import utf8
-from tornado import httputil
-from tornado.ioloop import IOLoop
-from tornado.util import import_object, bytes_type
+from gaema.escape import utf8
+from gaema import httputil
+from gaema.ioloop import IOLoop
+from gaema.util import import_object, bytes_type
 
 class HTTPClient(object):
     """A blocking HTTP client.

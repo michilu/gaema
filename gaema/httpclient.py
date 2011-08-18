@@ -26,39 +26,19 @@ class AsyncHTTPClient(object):
     def fetch(self, url, callback, **kwargs):
         # Replace kwarg keys.
         kwargs['payload'] = kwargs.pop('body', None)
-
-        rpc = urlfetch.create_rpc()
-        rpc.callback = create_rpc_callback(rpc, callback)
-        urlfetch.make_fetch_call(rpc, url, **kwargs)
-        rpc.wait()
-
-
-def create_rpc_callback(rpc, callback, *args, **kwargs):
-    """Returns a wrapped callback for an async request."""
-    if callback is None:
-        return None
-
-    if args or kwargs:
-        callback = functools.partial(callback, *args, **kwargs)
-
-    def wrapper(*args, **kwargs):
+        kwargs['deadline'] = 10
         try:
-            result = rpc.get_result()
-            code = result.status_code
-            # Add 'body' and 'error' attributes expected by tornado.
-            setattr(result, 'body', result.content)
-            if code < 200 or code >= 300:
-                setattr(result, 'error', 'Error %d' % code)
-            else:
-                setattr(result, 'error', None)
-
+          result = urlfetch.fetch(url, **kwargs)
+          code = result.status_code
+          setattr(result, 'body', result.content)
+          if code < 200 or code >= 300:
+            logging.debug(result.body)
+            setattr(result, 'error', 'Error %d' % code)
+          else:
+            setattr(result, 'error', None)
+            logging.debug(result.body)
         except urlfetch.DownloadError, e:
-            result = HttpResponseError()
-
-        try:
-            args += (result,)
-            return callback(*args, **kwargs)
-        except Exception, e:
-            logging.error("Exception during callback", exc_info=True)
-
-    return wrapper
+          logging.debug(e)
+          result = HttpResponseError()
+        args = () + (result,)
+        return callback(*args)

@@ -1108,3 +1108,5 @@ def _oauth_parse_response(body):
     return token
 
 
+class YahooMixin(OpenIdMixin):
+  _OPENID_ENDPOINT = 'https://open.login.yahooapis.com/openid/op/auth'

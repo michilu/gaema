@@ -9,10 +9,11 @@ kay.ext.gaema.views
 """
 
 from kay import exceptions
-from kay.ext.gaema import (
+
+from gaema import (
   GoogleAuth, TwitterAuth, FacebookAuth, YahooAuth
 )
-from kay.ext.gaema.auth import OpenIdMixin
+from gaema.auth import OpenIdMixin
 
 GOOG_OPENID = 'goog_openid'
 GOOG_HYBRID = 'goog_hybrid'

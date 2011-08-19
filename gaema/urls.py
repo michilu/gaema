@@ -8,21 +8,12 @@ kay.ext.gaema.urls
 :license: BSD, see LICENSE for more details.
 """
 
-from kay.routing import (
-  ViewGroup, Rule
-)
+from django.conf.urls.defaults import *
 
-view_groups = [
-  ViewGroup(
-    Rule('/login/<service>', endpoint='login',
-         view='kay.ext.gaema.views.login'),
-    Rule('/logout/<service>', endpoint='logout',
-         view='kay.ext.gaema.views.logout'),
-    Rule('/marketplace_login/a/<domain>', endpoint='marketplace_login',
-         view='kay.ext.gaema.views.marketplace_login'),
-    Rule('/marketplace_logout/<domain>', endpoint='marketplace_logout',
-         view='kay.ext.gaema.views.marketplace_logout'),
-    Rule('/select_service/<targets>', endpoint='select_service',
-         view='kay.ext.gaema.views.select_service'),
-  )
-]
+urlpatterns = patterns('',
+    (r'login/(?P<service>\w+)', 'gaema.views.login'),
+    (r'logout/(?P<service>\w+)', 'gaema.views.logout'),
+    (r'marketplace_login/a/(?P<domain>\w+)', 'gaema.views.marketplace_login'),
+    (r'marketplace_logout/(?P<domain>\w+)', 'gaema.views.marketplace_logout'),
+    (r'select_service/(?P<targets>\w+)', 'gaema.views.select_service'),
+)

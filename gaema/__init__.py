@@ -9,19 +9,18 @@ import functools
 import logging
 import base64
 
-from werkzeug.routing import RequestRedirect
-from werkzeug.exceptions import (
-  HTTPException, InternalServerError
-)
+from django.conf import settings
+from django.http import HttpResponseServerError
 
-from kay.ext.gaema import auth
-from kay.utils import set_cookie
-from kay.conf import settings
+from gaema import auth
 
 mount_point = "/_ah/gaema"
 
 GAEMA_USER_KEY_FORMAT = "_%s_user"
 NEXT_URL_KEY_FORMAT = "_nexturl_%s"
+
+class RequestRedirect(Exception):
+  pass
 
 class RequestAdapter(object):
   """Adapter to transform a `webob` request into a request with the
@@ -42,15 +41,16 @@ class RequestAdapter(object):
     A `werkzeug.Request` instance.
     """
     self.arguments = {}
-    for k, v in request.args.items():
+    for k, v in request.REQUEST.items():
       self.arguments.setdefault(k, []).append(v)
-    for k, v in request.form.items():
+    for k, v in request.POST.items():
       self.arguments.setdefault(k, []).append(v)
 
-    self.full_url = lambda: request.url
-    self.url_root = request.url_root
-    self.host = request.host
+    self.full_url = request.build_absolute_uri
+    self.url_root = request.get_full_path()
+    self.host = request.get_host()
     self.path = request.path
+    self.uri = self.full_url()
 
 
 class GAEMultiAuthMixin(object):
@@ -64,10 +64,10 @@ class GAEMultiAuthMixin(object):
     self.redirect_to = None
 
   def is_callback(self):
-    v = self._request.args.get(self.arg_in_callback, None)
+    v = self._request.REQUEST.get(self.arg_in_callback, None)
     if v is not None:
       return True
-    v = self._request.form.get(self.arg_in_callback, None)
+    v = self._request.POST.get(self.arg_in_callback, None)
     if v is not None:
       return True
 
@@ -89,10 +89,6 @@ class GAEMultiAuthMixin(object):
     def wrapper(*args, **kwargs):
       try:
         return callback(*args, **kwargs)
-      except RequestRedirect:
-        raise
-      except HTTPException:
-        raise
       except Exception, e:
         logging.error('Exception during callback', exc_info=True)
 
@@ -103,11 +99,11 @@ class GAEMultiAuthMixin(object):
 
   _ARG_DEFAULT = []
   def get_argument(self, name, default=_ARG_DEFAULT, strip=True):
-    value = self._request.args.get(name, default)
+    value = self._request.REQUEST.get(name, default)
     if value is self._ARG_DEFAULT:
       value = self._request.form.get(name, default)
       if value is self._ARG_DEFAULT:
-        raise InternalServerError('Missing request argument %s' % name)
+        return HttpResponseServerError('Missing request argument %s' % name)
 
     if strip:
       value = value.strip()
@@ -130,7 +126,7 @@ class GAEMultiAuthMixin(object):
         days=expires_days)
     value = str(base64.b64encode(value))
 
-    set_cookie(name, value, path=path, domain=domain, expires=expires)
+    self._response.set_cookie(name, value, path=path, domain=domain, expires=expires)
 
 
 class GoogleAuth(GAEMultiAuthMixin, auth.GoogleMixin):

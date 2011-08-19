@@ -8,19 +8,23 @@ kay.ext.gaema.views
 
 """
 
-from werkzeug import redirect
 from urllib import unquote_plus
 
-from kay.conf import settings
-from kay.utils import set_cookie
-from kay.utils import render_to_response
-from kay.ext.gaema import (
-  GoogleMarketPlaceAuth, GAEMA_USER_KEY_FORMAT, NEXT_URL_KEY_FORMAT
+from django.conf import settings
+from django.http import HttpResponseRedirect
+from django.shortcuts import (
+  redirect,
+  render_to_response,
 )
-from kay.ext.gaema.utils import (
+
+from gaema import (
+  GoogleMarketPlaceAuth, GAEMA_USER_KEY_FORMAT, NEXT_URL_KEY_FORMAT,
+  RequestRedirect,
+)
+from gaema.utils import (
   set_gaema_user, get_gaema_user, create_gaema_login_url
 )
-from kay.ext.gaema.services import (
+from gaema.services import (
   get_service_verbose_name, get_auth_module, use_hybrid,
   GOOG_OPENID, GOOG_HYBRID, TWITTER, FACEBOOK, YAHOO
 )
@@ -29,7 +33,7 @@ from kay.ext.gaema.services import (
 
 def select_service(request, targets):
   targets = targets.split('|')
-  next_url = unquote_plus(request.args.get('next_url'))
+  next_url = unquote_plus(request.REQUEST.get('next_url', "/"))
   urls = []
   for target in targets:
     verbose_name = 'Sign in with %s' % get_service_verbose_name(target)
@@ -45,7 +49,7 @@ def login(request, service):
   next_url_key = NEXT_URL_KEY_FORMAT % service
   def auth_callback(user):
     set_gaema_user(service, user)
-  next_url = request.cookies.get(next_url_key, "/")
+  next_url = request.COOKIES.get(next_url_key, "/")
   if get_gaema_user(service):
     return redirect(next_url)
   auth_instance = auth_module(request)
@@ -54,9 +58,15 @@ def login(request, service):
     return redirect(next_url)
   if use_hybrid(service):
     oauth_scope = getattr(settings, 'GAEMA_OAUTH_SCOPE', None)
-    auth_instance.authorize_redirect(oauth_scope)
+    try:
+      auth_instance.authorize_redirect(oauth_scope)
+    except RequestRedirect, e:
+      return HttpResponseRedirect(e)
   else:
-    auth_instance.authenticate_redirect()
+    try:
+      auth_instance.authenticate_redirect()
+    except RequestRedirect, e:
+      return HttpResponseRedirect(e)
 
 def logout(request, service):
   next_url_key = NEXT_URL_KEY_FORMAT % service
